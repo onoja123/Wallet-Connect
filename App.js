@@ -1,13 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import { ethers } from 'ethers'
-import {
-  WalletConnectModal,
-  useWalletConnectModal,
-} from '@walletconnect/modal-react-native'
+import React, { useEffect, useState } from 'react';
+import { Text, View, Pressable, StyleSheet } from 'react-native';
+import { ethers } from 'ethers';
+import { WalletConnectModal, useWalletConnectModal } from '@walletconnect/modal-react-native';
 
-const projectId = '315b25d26527e41f1d8244b75db7b85f'
+const projectId = '315b25d26527e41f1d8244b75db7b85f';
 
 const providerMetadata = {
   name: 'YOUR_PROJECT_NAME',
@@ -18,72 +14,56 @@ const providerMetadata = {
     native: 'YOUR_APP_SCHEME://',
     universal: 'YOUR_APP_UNIVERSAL_LINK.com',
   },
-}
+};
 
 export default function App() {
-    const [provider, setProvider] = useState(null)
-    const [signer, setSigner] = useState(null)
-  const { isOpen, open, close, isConnected, address } =
-    useWalletConnectModal()
+  const [provider, setProvider] = useState(null);
+  const [signer, setSigner] = useState(null);
+  const { isOpen, open, close, isConnected, address } = useWalletConnectModal();
 
-    useEffect(() => {
-      const initProvider = async () => {
-        const infuraApiKey = '572f15aef61f46aea1e0669b5465c4ec'
-        const provider = new ethers.providers.JsonRpcProvider(
-          `https://mainnet.infura.io/v3/${infuraApiKey}`
-        )
+  useEffect(() => {
+    const initProvider = async () => {
+      if (isConnected) {
+        // Access the connected wallet's provider and signer here
+        const walletProvider = new ethers.providers.Web3Provider(provider);
+        const walletSigner = walletProvider.getSigner();
 
-        // Replace with your private key
-        const privateKey =
-          '0x40c8bd7580b4d81d4417ea3317d9b37dcd9628d5327b44d0622518c971537769'
-        const wallet = new ethers.Wallet(privateKey, provider)
-        const signer = wallet.connect(provider)
-
-        setProvider(provider)
-        setSigner(signer)
+        setProvider(walletProvider);
+        setSigner(walletSigner);
       }
+    };
 
-      initProvider()
-    }, [])
-  const handleTransaction = async () => {
-    if (signer) {
+    initProvider();
+  }, [isConnected]);
+
+  const handleToggleModal = async () => {
+    if (isConnected) {
       try {
-        const transaction = {
-          to: '0xD98FD1B85A65Bf53c43e785a194e50913AeC8356', // Replace with recipient's Ethereum address
-          value: ethers.utils.parseEther('0.1'), // Amount of ETH to send
-        }
-
-        const txResponse = await signer.sendTransaction(transaction)
-
-        console.log('Transaction sent:', txResponse)
+        // Perform any necessary cleanup or disconnection steps here
+        setProvider(null);
+        setSigner(null);
+  
+        // Update the isConnected state to false
       } catch (error) {
-        console.error('Error sending transaction:', error.code)
+        console.error('Error disconnecting:', error);
       }
+    } else {
+      open(); // Open the wallet connect modal
     }
-  }
+  };
 
   const handleSignature = async () => {
     if (signer) {
       try {
-        const message = 'Hello, this is a signed message!'
-        const signature = await signer.signMessage(message)
+        const message = 'Hello, this is a signed message!';
+        const signature = await signer.signMessage(message);
 
-        console.log('Message signature:', signature)
+        console.log('Message signature:', signature);
       } catch (error) {
-        console.error('Error signing message:', error)
+        console.error('Error signing message:', error);
       }
     }
-  }
-
-  const handleToggleModal = () => {
-     if (isConnected) {
-       return provider?.disconnect()
-     }
-     return open()
-  }
-
-
-  // console.log(provider)
+  };
 
   return (
     <View style={styles.container}>
@@ -94,9 +74,6 @@ export default function App() {
       >
         <Text>{isConnected ? 'Disconnect' : 'Connect'}</Text>
       </Pressable>
-      <Pressable onPress={handleTransaction} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-        <Text>Send Transaction</Text>
-      </Pressable>
       <Pressable onPress={handleSignature} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
         <Text>Sign Message</Text>
       </Pressable>
@@ -106,7 +83,7 @@ export default function App() {
         providerMetadata={providerMetadata}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -125,4 +102,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.6,
   },
-})
+});
